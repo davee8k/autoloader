@@ -2,7 +2,7 @@
 
 ## Description
 
-Simple autoloader
+Simple class autoloader for php
 
 ## Requirements
 
@@ -15,4 +15,3 @@ Simple autoloader
 		["./phplibs/"=>true],	// dirs to index
 		["./phplibs/dontindex/"=>true]	// dir to ignore
 	);
-

@@ -5,20 +5,20 @@ namespace Autoloader;
  * usage: new Autoloader("/path/to/temp.json", ["./phplibs/"=>true], ["./phplibs/dontindex/"=>true]);
  * or: new Autloloader(null, ["./phplibs/"=>false]);
  *
- * @author DaVee
+ * @author DaVee8k
  * @version 0.83.1
  * @license https://unlicense.org/
  */
 class Autoloader {
-	/** @var string */
+	/** @var string		index files with extensions */
 	public static $extRegex = '/\.(php|php5)$/i';
-	/** @var string[] */
+	/** @var string[]	ignore files when indexing */
 	public static $ignoreItems = array('.','..');
-	/** @var bool */
+	/** @var bool		ignore duplicate classes */
 	public static $ignoreDuplicates = true;
-	/** @var bool */
+	/** @var bool		allow only classes with namespace */
 	public static $onlyNamespace = false;
-	/** @var string */
+	/** @var string		special directory name for testing when script are moved to different directory */
 	public static $markDir = '0 DIR';
 
 	/** @var string|null */
