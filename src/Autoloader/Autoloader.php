@@ -1,13 +1,16 @@
 <?php
 namespace Autoloader;
+
+use RuntimeException;
+
 /**
  * Simple autoloader PHP 5.3+
  * usage: new Autoloader("/path/to/temp.json", ["./phplibs/"=>true], ["./phplibs/dontindex/"=>true]);
  * or: new Autloloader(null, ["./phplibs/"=>false]);
  *
  * @author DaVee8k
- * @version 0.83.1
  * @license https://unlicense.org/
+ * @version 0.83.2
  */
 class Autoloader {
 	/** @var string		index files with extensions */
@@ -94,16 +97,16 @@ class Autoloader {
 	/**
 	 * Search in files for classes and optionally creates temp file with array
 	 * @param bool $replace
- 	 * @throws \RuntimeException		directory is set instead of settings
+ 	 * @throws RuntimeException		directory is set instead of settings
 	 */
 	protected function reindex ($replace = true) {
 		$this->classList = array();
 		foreach ($this->dirs as $dir=>$search) {
-			if (is_string($search)) throw new \RuntimeException("Invalid index setting: ".$search, 500);
+			if (is_string($search)) throw new RuntimeException("Invalid index setting: ".$search, 500);
 			$this->findFiles($dir, $search);
 		}
 		if ($replace && $this->tempFile) {
-			file_put_contents($this->tempFile, json_encode(array(self::$markDir=>__DIR__) + $this->classList));
+			file_put_contents($this->tempFile, json_encode(array(self::$markDir=>__DIR__) + $this->classList), LOCK_EX);
 		}
 		$this->timeMark = time();
 	}
@@ -139,7 +142,7 @@ class Autoloader {
 	 * Put found classes into array and check for duplicity
 	 * @param string $file
 	 * @param bool $ignore		iqnore duplicate classes
-	 * @throws \RuntimeException		duplicate exists
+	 * @throws RuntimeException		duplicate exists
 	 */
 	protected function loadFileClasses ($file, $ignore = false) {
 		$source = file_get_contents($file);
@@ -147,7 +150,7 @@ class Autoloader {
 		if (!empty($classes)) {
 			foreach ($classes as $info) {
 				$mark = ($info['NAMESPACE'] ? $info['NAMESPACE'].'\\' : '').$info['CLASS'];
-				if (!$ignore && isset($this->classList[$mark])) throw new \RuntimeException('Class: '.$mark.' already defined.', 500);
+				if (!$ignore && isset($this->classList[$mark])) throw new RuntimeException('Class: '.$mark.' already defined.', 500);
 				$this->classList[$mark] = $file;
 			}
 		}
