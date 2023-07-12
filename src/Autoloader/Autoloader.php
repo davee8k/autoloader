@@ -4,62 +4,62 @@ namespace Autoloader;
 use RuntimeException;
 
 /**
- * Simple autoloader PHP 5.3+
+ * Simple autoloader PHP 7.1+
  * usage: new Autoloader("/path/to/temp.json", ["./phplibs/"=>true], ["./phplibs/dontindex/"=>true]);
- * or: new Autloloader(null, ["./phplibs/"=>false]);
+ * or: new Autoloader(null, ["./phplibs/"=>false]);
  *
  * @author DaVee8k
  * @license https://unlicense.org/
- * @version 0.83.2
+ * @version 0.87
  */
 class Autoloader {
-	/** @var string		index files with extensions */
+	/** @var string		Index files with extensions */
 	public static $extRegex = '/\.(php|php5)$/i';
-	/** @var string[]	ignore files when indexing */
-	public static $ignoreItems = array('.','..');
-	/** @var bool		ignore duplicate classes */
-	public static $ignoreDuplicates = true;
-	/** @var bool		allow only classes with namespace */
+	/** @var string[]	Ignore files when indexing */
+	public static $ignoreItems = ['.','..'];
+	/** @var bool		Ignore duplicate classes */
+	public static $ignoreDuplicates = false;
+	/** @var bool		Allow only classes with namespace */
 	public static $onlyNamespace = false;
-	/** @var string		special directory name for testing when script are moved to different directory */
+	/** @var string		Special directory name for testing when script are moved to different directory */
 	public static $markDir = '0 DIR';
 
 	/** @var string|null */
 	protected $tempFile;
-	/** @var int */
+	/** @var int|false */
 	protected $timeMark = 0;
-	/** @var array */
-	protected $dirs = array();
-	/** @var array */
-	protected $ignore = array();
-	/** @var array */
-	protected $classList = array();
+	/** @var array<string, bool> */
+	protected $dirs = [];
+	/** @var array<string, bool> */
+	protected $ignore = [];
+	/** @var array<string, string> */
+	protected $classList = [];
 
 	/**
 	 * Create class index and register load function
-	 * @param string $tempFile	file for class list cache (can be disabled with null)
-	 * @param array $dirs		directories to index
-	 * @param array $ignore		directories to skip
+	 * @param string|null $tempFile	File for class list cache (can be disabled with null)
+	 * @param array<string, bool> $dirs		Directories to index
+	 * @param array<string, bool> $ignore	directories to skip
 	 */
-	public function __construct ($tempFile, array $dirs, array $ignore = array()) {
+	public function __construct (?string $tempFile, array $dirs, array $ignore = []) {
 		$this->tempFile = $tempFile;
 		$this->dirs = $dirs;
 		$this->ignore = $ignore;
 
 		if ($tempFile && is_file($tempFile)) {
-			$this->classList = json_decode(file_get_contents($tempFile), true);
+			$source = file_get_contents($tempFile);
+			if ($source) $this->classList = json_decode($source, true);
 			$this->timeMark = filemtime($tempFile);
 			$this->checkPath();
 		}
-		spl_autoload_register(array($this, 'load'));
+		spl_autoload_register([$this, 'load']);
 	}
 
 	/**
 	 * Load file with required class
 	 * @param string $class			class name
-	 * @return null
 	 */
-	public function load ($class) {
+	public function load (string $class): void {
 		if (isset($this->classList[$class]) && is_file($this->classList[$class])) {
 			require_once $this->classList[$class];
 			if (class_exists($class, false) || interface_exists($class, false)
@@ -74,7 +74,7 @@ class Autoloader {
 	/**
 	 * Check if files were indexed in current directory
 	 */
-	protected function checkPath () {
+	protected function checkPath (): void {
 		if (isset($this->classList[self::$markDir])) {
 			if ($this->classList[self::$markDir] == __DIR__) {
 				unset($this->classList[self::$markDir]);
@@ -87,26 +87,25 @@ class Autoloader {
 
 	/**
 	 * Timeout for reindexing
-	 * @param string $class		class name
+	 * @param string|null $class	class name
 	 * @return bool
 	 */
-	protected function isTryReindex ($class = null) {
+	protected function isTryReindex (string $class = null): bool {
 		return $this->timeMark < (time() - 10) && (!$class || !self::$onlyNamespace || strpos('\\', $class));
 	}
 
 	/**
 	 * Search in files for classes and optionally creates temp file with array
 	 * @param bool $replace
- 	 * @throws RuntimeException		directory is set instead of settings
+	 * @throws \RuntimeException		directory is set instead of settings
 	 */
-	protected function reindex ($replace = true) {
-		$this->classList = array();
+	protected function reindex (bool $replace = true): void {
+		$this->classList = [];
 		foreach ($this->dirs as $dir=>$search) {
-			if (is_string($search)) throw new RuntimeException("Invalid index setting: ".$search, 500);
 			$this->findFiles($dir, $search);
 		}
 		if ($replace && $this->tempFile) {
-			file_put_contents($this->tempFile, json_encode(array(self::$markDir=>__DIR__) + $this->classList), LOCK_EX);
+			file_put_contents($this->tempFile, json_encode([self::$markDir=>__DIR__] + $this->classList), LOCK_EX);
 		}
 		$this->timeMark = time();
 	}
@@ -116,7 +115,7 @@ class Autoloader {
 	 * @param string $dir
 	 * @param bool $searchSubDir
 	 */
-	protected function findFiles ($dir, $searchSubDir) {
+	protected function findFiles (string $dir, bool $searchSubDir): void {
 		if (isset($this->ignore[$dir])) {
 			if ($this->ignore[$dir]) return;
 			$searchSubDir = false;
@@ -144,9 +143,9 @@ class Autoloader {
 	 * @param bool $ignore		iqnore duplicate classes
 	 * @throws RuntimeException		duplicate exists
 	 */
-	protected function loadFileClasses ($file, $ignore = false) {
+	protected function loadFileClasses (string $file, bool $ignore = false): void {
 		$source = file_get_contents($file);
-		$classes = $this->getContentClasses($source);
+		$classes = $source ? $this->getContentClasses($source) : null;
 		if (!empty($classes)) {
 			foreach ($classes as $info) {
 				$mark = ($info['NAMESPACE'] ? $info['NAMESPACE'].'\\' : '').$info['CLASS'];
@@ -159,18 +158,18 @@ class Autoloader {
 	/**
 	 * Find classes in source file
 	 * @param string $src		source code
-	 * @return array
+	 * @return array<array<string, string>>
 	 */
-	protected function getContentClasses ($src) {
+	protected function getContentClasses (string $src): array {
 		$namespace = '';
-		$classes = array();
+		$classes = [];
 
 		$tokens = token_get_all($src);
 		$count = count($tokens);
 
 		for ($i = 2; $i < $count; $i++) {
 			$objType = $tokens[$i - 2][0];
-			if ($objType == T_NAMESPACE && $tokens[$i - 1][0] == (T_WHITESPACE && $tokens[$i][0] == T_STRING || defined('T_NAME_QUALIFIED') && $tokens[$i][0] == T_NAME_QUALIFIED)) {
+			if ($objType == T_NAMESPACE && $tokens[$i - 1][0] == T_WHITESPACE && ($tokens[$i][0] == T_STRING || defined('T_NAME_QUALIFIED') && $tokens[$i][0] == T_NAME_QUALIFIED)) {
 				$namespace = $tokens[$i][1];
 				$j = 2;
 				while ($tokens[$i + $j - 1][0] == T_NS_SEPARATOR && $tokens[$i + $j][0] == T_STRING) {
@@ -178,9 +177,9 @@ class Autoloader {
 					$j += 2;
 				}
 			}
-			else if ( ($objType == T_CLASS || $objType == T_INTERFACE || defined('T_TRAIT') && $objType == T_TRAIT)
+			else if ( ($objType == T_CLASS || $objType == T_INTERFACE || defined('T_TRAIT') && $objType == T_TRAIT || defined('T_ENUM') && $objType == T_ENUM)
 						&& $tokens[$i - 1][0] == T_WHITESPACE && $tokens[$i][0] == T_STRING) {
-				$classes[] = array('NAMESPACE'=>$namespace, 'CLASS'=>$tokens[$i][1]);
+				$classes[] = ['NAMESPACE'=>$namespace, 'CLASS'=>$tokens[$i][1]];
 			}
 		}
 		return $classes;

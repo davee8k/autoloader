@@ -1,6 +1,7 @@
 <?php
 namespace NamespaceClass;
 
-class NamespaceClass {
-	
+class
+NamespaceClass
+{
 }
