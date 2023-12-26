@@ -1,12 +1,18 @@
-<?php
+<?php declare(strict_types=1);
+
 namespace Autoloader;
 
 use RuntimeException;
 
 /**
  * Simple autoloader PHP 7.1+
- * usage: new Autoloader("/path/to/temp.json", ["./phplibs/"=>true], ["./phplibs/dontindex/"=>true]);
- * or: new Autoloader(null, ["./phplibs/"=>false]);
+ *
+ * basic usage:
+ * <code>
+ * new Autoloader("/path/to/temp.json", ["./directory/"=>true], ["./directory/dont-index/"=>true]);
+ * or:
+ * new Autoloader(null, ["./directory/"=>false]);
+ * </code>
  *
  * @author DaVee8k
  * @license https://unlicense.org/
@@ -97,7 +103,7 @@ class Autoloader {
 	/**
 	 * Search in files for classes and optionally creates temp file with array
 	 * @param bool $replace
-	 * @throws \RuntimeException		directory is set instead of settings
+	 * @throws RuntimeException		directory is set instead of settings
 	 */
 	protected function reindex (bool $replace = true): void {
 		$this->classList = [];
@@ -140,7 +146,7 @@ class Autoloader {
 	/**
 	 * Put found classes into array and check for duplicity
 	 * @param string $file
-	 * @param bool $ignore		iqnore duplicate classes
+	 * @param bool $ignore		ignore duplicate classes
 	 * @throws RuntimeException		duplicate exists
 	 */
 	protected function loadFileClasses (string $file, bool $ignore = false): void {
