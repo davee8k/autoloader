@@ -2,9 +2,17 @@
 
 use Autoloader\Autoloader;
 
-class AutoloaderTest extends \PHPUnit\Framework\TestCase {
+use PHPUnit\Framework\TestCase;
 
-	protected function callPrivateProperty ($obj, $name) {
+class AutoloaderTest extends TestCase {
+
+	/**
+	 *
+	 * @param Autoloader $obj
+	 * @param string $name
+	 * @return array<string, string>
+	 */
+	protected function callPrivateProperty (Autoloader $obj, string $name): array {
 		$class = new \ReflectionClass($obj);
 		return $class->getProperty($name)->getValue($obj);
 	}
@@ -94,7 +102,8 @@ class AutoloaderTest extends \PHPUnit\Framework\TestCase {
 	public function testIndexDuplicatesFail (): void {
 		$loader = new Autoloader(null, ['./SourcesToIndex/Core/'=>true, './SourcesToIndex/Duplicates/'=>true]);
 
-		$this->expectException('RuntimeException', 'Class: DuplicityClass already defined.');
+		$this->expectException('RuntimeException');
+		$this->expectExceptionMessage('Class: DuplicityClass already defined.');
 
 		$loader->load('TestClass');
 	}

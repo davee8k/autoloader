@@ -10,7 +10,7 @@ interface Ignore {
 	/**
 	 * Comment
 	 */
-	function x ();
+	function x (): void;
 }
 
 namespace space\sub\s_b;
@@ -24,5 +24,10 @@ class AnotherClass {
 	 */
 	private function y (int $para): void {
 
+	}
+
+	public function useForStan (): int {
+		$this->y(1);
+		return 0;
 	}
 }
