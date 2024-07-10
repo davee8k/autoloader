@@ -16,7 +16,7 @@ use RuntimeException;
  *
  * @author DaVee8k
  * @license https://unlicense.org/
- * @version 0.87
+ * @version 0.87.1
  */
 class Autoloader {
 	/** @var string		Index files with extensions */
@@ -68,8 +68,7 @@ class Autoloader {
 	public function load (string $class): void {
 		if (isset($this->classList[$class]) && is_file($this->classList[$class])) {
 			require_once $this->classList[$class];
-			if (class_exists($class, false) || interface_exists($class, false)
-					|| is_callable('trait_exists', true) && (trait_exists($class, false))) return;
+			if (class_exists($class, false) || interface_exists($class, false) || (trait_exists($class, false))) return;
 		}
 		if (empty($this->classList) || $this->isTryReindex($class)) {
 			$this->reindex(empty($this->classList) || $this->isTryReindex());
@@ -127,9 +126,9 @@ class Autoloader {
 			$searchSubDir = false;
 		}
 
-		$dh = opendir($dir);
-		if ($dh) {
-			while (false !== ($name = readdir($dh))) {
+		$handle = opendir($dir);
+		if ($handle) {
+			while (false !== ($name = readdir($handle))) {
 				if (!in_array($name, self::$ignoreItems)) {
 					if ($searchSubDir && is_dir($dir.$name)) {
 						$this->findFiles($dir.$name.'/', $searchSubDir);
@@ -139,7 +138,7 @@ class Autoloader {
 					}
 				}
 			}
-			closedir($dh);
+			closedir($handle);
 		}
 	}
 
@@ -177,13 +176,13 @@ class Autoloader {
 			$objType = $tokens[$i - 2][0];
 			if ($objType == T_NAMESPACE && $tokens[$i - 1][0] == T_WHITESPACE && ($tokens[$i][0] == T_STRING || defined('T_NAME_QUALIFIED') && $tokens[$i][0] == T_NAME_QUALIFIED)) {
 				$namespace = $tokens[$i][1];
-				$j = 2;
-				while ($tokens[$i + $j - 1][0] == T_NS_SEPARATOR && $tokens[$i + $j][0] == T_STRING) {
-					$namespace .= '\\'.$tokens[$i + $j][1];
-					$j += 2;
+				$pos = 2;
+				while ($tokens[$i + $pos - 1][0] == T_NS_SEPARATOR && $tokens[$i + $pos][0] == T_STRING) {
+					$namespace .= '\\'.$tokens[$i + $pos][1];
+					$pos += 2;
 				}
 			}
-			else if ( ($objType == T_CLASS || $objType == T_INTERFACE || defined('T_TRAIT') && $objType == T_TRAIT || defined('T_ENUM') && $objType == T_ENUM)
+			else if ( ($objType == T_CLASS || $objType == T_INTERFACE || $objType == T_TRAIT || defined('T_ENUM') && $objType == T_ENUM)
 						&& $tokens[$i - 1][0] == T_WHITESPACE && $tokens[$i][0] == T_STRING) {
 				$classes[] = ['NAMESPACE'=>$namespace, 'CLASS'=>$tokens[$i][1]];
 			}
