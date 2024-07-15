@@ -1,3 +1,6 @@
 <?php
 
-enum EnumClass{}
+enum EnumClass
+{
+
+}

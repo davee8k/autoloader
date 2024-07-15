@@ -1,7 +1,9 @@
 <?php
-namespace		NamespaceClass\Subdir ;
+
+namespace NamespaceClass\Subdir;
 
 class
 NamespaceClass
 {
+
 }

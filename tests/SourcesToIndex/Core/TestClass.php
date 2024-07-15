@@ -1,4 +1,6 @@
 <?php
-abstract class TestClass{
+
+abstract class TestClass
+{
 
 }

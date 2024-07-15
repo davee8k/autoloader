@@ -1,4 +1,6 @@
 <?php
-class DuplicityClass {
-	
+
+class DuplicityClass
+{
+
 }

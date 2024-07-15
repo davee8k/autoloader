@@ -1,4 +1,5 @@
-<?php declare(strict_types=1);
+<?php
+declare(strict_types=1);
 
 namespace Autoloader;
 
@@ -18,11 +19,12 @@ use RuntimeException;
  * @license https://unlicense.org/
  * @version 0.87.1
  */
-class Autoloader {
+class Autoloader
+{
 	/** @var string		Index files with extensions */
 	public static $extRegex = '/\.(php|php5)$/i';
 	/** @var string[]	Ignore files when indexing */
-	public static $ignoreItems = ['.','..'];
+	public static $ignoreItems = ['.', '..'];
 	/** @var bool		Ignore duplicate classes */
 	public static $ignoreDuplicates = false;
 	/** @var bool		Allow only classes with namespace */
@@ -47,7 +49,8 @@ class Autoloader {
 	 * @param array<string, bool> $dirs		Directories to index
 	 * @param array<string, bool> $ignore	directories to skip
 	 */
-	public function __construct (?string $tempFile, array $dirs, array $ignore = []) {
+	public function __construct(?string $tempFile, array $dirs, array $ignore = [])
+	{
 		$this->tempFile = $tempFile;
 		$this->dirs = $dirs;
 		$this->ignore = $ignore;
@@ -65,26 +68,31 @@ class Autoloader {
 	 * Load file with required class
 	 * @param string $class			class name
 	 */
-	public function load (string $class): void {
+	public function load(string $class): void
+	{
 		if (isset($this->classList[$class]) && is_file($this->classList[$class])) {
 			require_once $this->classList[$class];
-			if (class_exists($class, false) || interface_exists($class, false) || (trait_exists($class, false))) return;
+			if (class_exists($class, false) || interface_exists($class, false) || (trait_exists($class, false))) {
+				return;
+			}
 		}
 		if (empty($this->classList) || $this->isTryReindex($class)) {
 			$this->reindex(empty($this->classList) || $this->isTryReindex());
-			if (isset($this->classList[$class])) $this->load($class);
+			if (isset($this->classList[$class])) {
+				$this->load($class);
+			}
 		}
 	}
 
 	/**
 	 * Check if files were indexed in current directory
 	 */
-	protected function checkPath (): void {
+	protected function checkPath(): void
+	{
 		if (isset($this->classList[self::$markDir])) {
 			if ($this->classList[self::$markDir] == __DIR__) {
 				unset($this->classList[self::$markDir]);
-			}
-			else {
+			} else {
 				$this->reindex($this->isTryReindex());
 			}
 		}
@@ -95,7 +103,8 @@ class Autoloader {
 	 * @param string|null $class	class name
 	 * @return bool
 	 */
-	protected function isTryReindex (string $class = null): bool {
+	protected function isTryReindex(string $class = null): bool
+	{
 		return $this->timeMark < (time() - 10) && (!$class || !self::$onlyNamespace || strpos('\\', $class));
 	}
 
@@ -104,13 +113,14 @@ class Autoloader {
 	 * @param bool $replace
 	 * @throws RuntimeException		directory is set instead of settings
 	 */
-	protected function reindex (bool $replace = true): void {
+	protected function reindex(bool $replace = true): void
+	{
 		$this->classList = [];
-		foreach ($this->dirs as $dir=>$search) {
+		foreach ($this->dirs as $dir => $search) {
 			$this->findFiles($dir, $search);
 		}
 		if ($replace && $this->tempFile) {
-			file_put_contents($this->tempFile, json_encode([self::$markDir=>__DIR__] + $this->classList), LOCK_EX);
+			file_put_contents($this->tempFile, json_encode([self::$markDir => __DIR__] + $this->classList), LOCK_EX);
 		}
 		$this->timeMark = time();
 	}
@@ -120,7 +130,8 @@ class Autoloader {
 	 * @param string $dir
 	 * @param bool $searchSubDir
 	 */
-	protected function findFiles (string $dir, bool $searchSubDir): void {
+	protected function findFiles(string $dir, bool $searchSubDir): void
+	{
 		if (isset($this->ignore[$dir])) {
 			if ($this->ignore[$dir]) return;
 			$searchSubDir = false;
@@ -132,8 +143,7 @@ class Autoloader {
 				if (!in_array($name, self::$ignoreItems)) {
 					if ($searchSubDir && is_dir($dir.$name)) {
 						$this->findFiles($dir.$name.'/', $searchSubDir);
-					}
-					else if (preg_match(self::$extRegex, $name)) {
+					} elseif (preg_match(self::$extRegex, $name)) {
 						$this->loadFileClasses($dir.$name, self::$ignoreDuplicates);
 					}
 				}
@@ -148,13 +158,15 @@ class Autoloader {
 	 * @param bool $ignore		ignore duplicate classes
 	 * @throws RuntimeException		duplicate exists
 	 */
-	protected function loadFileClasses (string $file, bool $ignore = false): void {
+	protected function loadFileClasses(string $file, bool $ignore = false): void
+	{
 		$source = file_get_contents($file);
 		$classes = $source ? $this->getContentClasses($source) : null;
 		if (!empty($classes)) {
 			foreach ($classes as $info) {
 				$mark = ($info['NAMESPACE'] ? $info['NAMESPACE'].'\\' : '').$info['CLASS'];
-				if (!$ignore && isset($this->classList[$mark])) throw new RuntimeException('Class: '.$mark.' already defined.', 500);
+				if (!$ignore && isset($this->classList[$mark]))
+						throw new RuntimeException('Class: '.$mark.' already defined.', 500);
 				$this->classList[$mark] = $file;
 			}
 		}
@@ -165,7 +177,8 @@ class Autoloader {
 	 * @param string $src		source code
 	 * @return array<array<string, string>>
 	 */
-	protected function getContentClasses (string $src): array {
+	protected function getContentClasses(string $src): array
+	{
 		$namespace = '';
 		$classes = [];
 
@@ -181,10 +194,8 @@ class Autoloader {
 					$namespace .= '\\'.$tokens[$i + $pos][1];
 					$pos += 2;
 				}
-			}
-			else if ( ($objType == T_CLASS || $objType == T_INTERFACE || $objType == T_TRAIT || defined('T_ENUM') && $objType == T_ENUM)
-						&& $tokens[$i - 1][0] == T_WHITESPACE && $tokens[$i][0] == T_STRING) {
-				$classes[] = ['NAMESPACE'=>$namespace, 'CLASS'=>$tokens[$i][1]];
+			} elseif (($objType == T_CLASS || $objType == T_INTERFACE || $objType == T_TRAIT || defined('T_ENUM') && $objType == T_ENUM) && $tokens[$i - 1][0] == T_WHITESPACE && $tokens[$i][0] == T_STRING) {
+				$classes[] = ['NAMESPACE' => $namespace, 'CLASS' => $tokens[$i][1]];
 			}
 		}
 		return $classes;

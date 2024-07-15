@@ -1,4 +1,6 @@
 <?php
-trait TraitClass {
+
+trait TraitClass
+{
 
 }
